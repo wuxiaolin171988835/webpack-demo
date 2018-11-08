@@ -2,6 +2,7 @@ const path = require('path')
 const VueLoaderPlugin = require('vue-loader/lib/plugin')
 const htmlWebpackPlugin = require('html-webpack-plugin')
 const webpack = require('webpack')
+const ExtractTextWebpackPlugin = require('extract-text-webpack-plugin')
 
 const isDev = process.env.NODE_ENV === 'development'
 const config = {
@@ -21,7 +22,8 @@ const config = {
     //生成html
     new htmlWebpackPlugin({
       template: './src/index.html'
-    })
+    }),
+    new ExtractTextWebpackPlugin()
   ],
   module: {
     rules: [
@@ -33,26 +35,26 @@ const config = {
         test: /\.jsx$/,
         loader: 'babel-loader'
       },
-      {
-        test: /\.css$/,
-        use: [
-          'style-loader',
-          'css-loader'
-        ]
-      },{
-        test: /\.less$/,
-        use: [
-          'style-loader',
-          'css-loader',
-          {
-            loader: 'postcss-loader',
-            options: {
-              sourceMap: true
-            }
-          },
-          'less-loader'
-        ]
-      },
+      // {
+      //   test: /\.css$/,
+      //   use: [
+      //     'style-loader',
+      //     'css-loader'
+      //   ]
+      // }, {
+      //   test: /\.less$/,
+      //   use: [
+      //     'style-loader',
+      //     'css-loader',
+      //     {
+      //       loader: 'postcss-loader',
+      //       options: {
+      //         sourceMap: true
+      //       }
+      //     },
+      //     'less-loader'
+      //   ]
+      // },
       {
         test: /\.(jpg|jpeg|svg|gif|png)$/,
         use: [
@@ -60,17 +62,33 @@ const config = {
             loader: 'url-loader',
             options: {
               limit: 1024,
-              name:'[name]-aaa.[ext]'
+              name: '[name]-aaa.[ext]'
             }
           }
         ]
       }
-    
+
     ]
   }
 }
 
-if(isDev){
+if (isDev) {
+  config.module.rules.push(
+    {
+      test: /\.less$/,
+      use: [
+        'style-loader',
+        'css-loader',
+        {
+          loader: 'postcss-loader',
+          options: {
+            sourceMap: true
+          }
+        },
+        'less-loader'
+      ]
+    },
+  )
   config.devtool = '#cheap-module-eval-source-map'
   //开发环境本地启动一个服务
   config.devServer = {
@@ -86,5 +104,29 @@ if(isDev){
     new webpack.HotModuleReplacementPlugin(),
     new webpack.NoEmitOnErrorsPlugin()
   )
+} else {
+  config.module.rules.push(
+    {
+      test: /\.less$/,
+      use: ExtractTextWebpackPlugin.extract({
+        fallback: 'style-loader',
+        use: [
+          'css-loader',
+          {
+            loader: 'postcss-loader',
+            options: {
+              sourceMap: true
+            }
+          },
+          'less-loader'
+        ]
+      })
+    }
+  )
+  config.plugins.push(
+    new ExtractTextWebpackPlugin('styles.[contentHash:8].css')
+  )
+  config.output.filename = '[name].[chunkHash:8].js'
+
 }
 module.exports = config
