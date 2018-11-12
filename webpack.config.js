@@ -9,7 +9,7 @@ const config = {
   target: 'web',
   entry: path.join(__dirname, 'src/index.js'),
   output: {
-    filename: 'bundle.js',
+    filename: 'bundle.[hash:8].js',
     path: path.join(__dirname, 'dist')
   },
   plugins: [
@@ -22,8 +22,7 @@ const config = {
     //生成html
     new htmlWebpackPlugin({
       template: './src/index.html'
-    }),
-    new ExtractTextWebpackPlugin()
+    })
   ],
   module: {
     rules: [
@@ -105,6 +104,11 @@ if (isDev) {
     new webpack.NoEmitOnErrorsPlugin()
   )
 } else {
+  config.entry = {
+    app:  path.join(__dirname, 'src/index.js'),
+    vendor: ['vue']
+  }
+  config.output.filename = '[name].[chunkHash:8].js'
   config.module.rules.push(
     {
       test: /\.less$/,
@@ -124,9 +128,29 @@ if (isDev) {
     }
   )
   config.plugins.push(
-    new ExtractTextWebpackPlugin('styles.[contentHash:8].css')
+    new ExtractTextWebpackPlugin('styles.[chunkHash:8].css'),
+    
   )
-  config.output.filename = '[name].[chunkHash:8].js'
+  config.optimization = {
+    splitChunks: {
+      cacheGroups: {
+        commons: {
+          chunks: 'initial',
+          minChunks: 2, maxInitialRequests: 5,
+          minSize: 0
+        },
+        vendor: {
+          test: /node_modules/,
+          chunks: 'initial',
+          name: 'vendor',
+          priority: 10,
+          enforce: true
+        }
+      }
+    },
+    runtimeChunk: true
+  }
+
 
 }
 module.exports = config
